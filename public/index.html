@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PetDex</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>🐾 PetDex</h1>
+        <p>Descubre qué animal tienes frente a ti</p>
+    </header>
+
+    <main>
+
+        <section class="card">
+
+            <h2>📷 Escanea una mascota</h2>
+
+            <p>
+                Sube una fotografía de un perro o gato
+                para obtener información sobre él.
+            </p>
+
+            <label for="foto" class="boton">
+                Seleccionar fotografía
+            </label>
+
+            <input 
+                type="file" 
+                id="foto" 
+                accept="image/*"
+            >
+
+            <div id="preview-container">
+                <img id="preview" alt="Vista previa">
+            </div>
+
+            <button id="analizar">
+                🔎 Analizar mascota
+            </button>
+
+        </section>
+
+        <section id="resultado" class="card resultado">
+
+            <h2>🐾 Resultado</h2>
+
+            <div id="informacion">
+                <p>Aquí aparecerá la información de tu mascota.</p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>PetDex © 2026</p>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
