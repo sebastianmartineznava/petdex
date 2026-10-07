@@ -3,13 +3,14 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const { GoogleGenAI } = require("@google/genai");
+const Groq = require("groq-sdk");
+const sharp = require("sharp");
 
 const app = express();
 const PORT = 3000;
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY
 });
 
 const upload = multer({
@@ -30,21 +31,30 @@ app.post("/analizar", upload.single("foto"), async (req, res) => {
             });
         }
 
-        const imagen = fs.readFileSync(req.file.path);
-        const base64 = imagen.toString("base64");
+        const imagen = await sharp(req.file.path)
+    .resize({
+        width: 5000,
+        height: 5000,
+        fit: "inside",
+        withoutEnlargement: true
+    })
+    .jpeg({
+        quality: 85
+    })
+    .toBuffer();
 
-        const interaction = await ai.interactions.create({
-            model: "gemini-3.8-flash",
+const base64 = imagen.toString("base64");
 
-            input: [
+        const resultado = await groq.chat.completions.create({
+            model: "qwen/qwen3.8-27b",
+
+            messages: [
                 {
-                    type: "image",
-                    data: base64,
-                    mime_type: req.file.mimetype
-                },
-                {
-                    type: "text",
-                    text: `
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: `
 Analiza esta fotografía para PetDex.
 
 Identifica si aparece un perro o un gato.
@@ -75,28 +85,42 @@ cuidados
 alimentacion
 ejercicio
 `
+                        },
+                        {
+                            type: "image_url",
+                            image_url: {
+                                url: `data:${req.file.mimetype};base64,${base64}`
+                            }
+                        }
+                    ]
                 }
-            ]
+            ],
+
+            response_format: {
+                type: "json_object"
+            },
+
+            temperature: 0.2,
+            max_completion_tokens: 1000
         });
 
-        console.log("🤖 Gemini respondió");
+        console.log("🤖 Groq respondió");
 
-        let texto = interaction.output_text;
+        const texto = resultado.choices[0].message.content;
 
-texto = texto
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+        const datos = JSON.parse(texto);
 
-const resultado = JSON.parse(texto);
-
-res.json(resultado);
+        res.json(datos);
 
         fs.unlinkSync(req.file.path);
 
     } catch (error) {
 
         console.error("❌ Error:", error);
+
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
 
         res.status(500).json({
             error: "Ocurrió un error al analizar la fotografía."
